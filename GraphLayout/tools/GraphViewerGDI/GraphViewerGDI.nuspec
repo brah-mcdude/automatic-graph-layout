@@ -14,9 +14,6 @@
     <language>en-US</language>
     <tags>MSAGL Graph Layout</tags>
     <dependencies>
-      <group targetFramework=".NETFramework4.6.1" >
-        <dependency id="AutomaticGraphLayout.Drawing" version="$(BuildVersion)" />
-      </group>
       <group targetFramework=".NETFramework4.7.2" >
         <dependency id="AutomaticGraphLayout.Drawing" version="$(BuildVersion)" />
       </group>
