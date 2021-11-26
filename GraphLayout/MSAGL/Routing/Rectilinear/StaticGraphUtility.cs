@@ -28,40 +28,47 @@ namespace Microsoft.Msagl.Routing.Rectilinear {
             return PointComparer.GetPureDirection(source.Point, target.Point);
         }
 
-        static internal VisibilityVertex GetVertex(VisibilityEdge edge, Direction dir) {
+        static internal VisibilityVertex GetEdgeEnd(VisibilityEdge edge, Direction dir) {
             Direction edgeDir = EdgeDirection(edge);
             Debug.Assert(0 != (dir & (edgeDir | CompassVector.OppositeDir(edgeDir))), "dir is orthogonal to edge");
             return (dir == edgeDir) ? edge.Target : edge.Source;
         }
         
-        static internal VisibilityVertex FindNextVertex(VisibilityVertex vertex, Direction dir) {
+        static internal VisibilityVertex FindAdjacentVertex(VisibilityVertex a, Direction dir) {
             // This function finds the next vertex in the desired direction relative to the
             // current vertex, not necessarily the edge orientation, hence it does not use
             // EdgeDirection().  This is so the caller can operate on a desired movement
             // direction without having to track whether we're going forward or backward
             // through the In/OutEdge chain.
-            int cEdges = vertex.InEdges.Count;      // indexing is faster than foreach for Lists
-            for (int ii = 0; ii < cEdges; ++ii) {
-                var edge = vertex.InEdges[ii];
-                if (PointComparer.GetPureDirection(vertex.Point, edge.SourcePoint) == dir) {
+            foreach (var edge in a.InEdges) {
+                
+                if (PointComparer.GetPureDirection(a.Point, edge.SourcePoint) == dir) {
                     return edge.Source;
                 }
             }
 
-            // Avoid GetEnumerator overhead.
-            var outEdgeNode = vertex.OutEdges.IsEmpty() ? null : vertex.OutEdges.TreeMinimum();
-            for (; outEdgeNode != null; outEdgeNode = vertex.OutEdges.Next(outEdgeNode)) {
-                var edge = outEdgeNode.Item;
-                if (PointComparer.GetPureDirection(vertex.Point, edge.TargetPoint) == dir) {
+            foreach (var edge in a.OutEdges) {
+                if (PointComparer.GetPureDirection(a.Point, edge.TargetPoint) == dir) {
                     return edge.Target;
                 }
             }
             return null;
         }
 
-        static internal VisibilityEdge FindNextEdge(VisibilityGraph vg, VisibilityVertex vertex, Direction dir) {
-            VisibilityVertex nextVertex = FindNextVertex(vertex, dir);
-            return (null == nextVertex) ? null : vg.FindEdge(vertex.Point, nextVertex.Point);
+        static internal VisibilityEdge FindAdjacentEdge(VisibilityVertex a, Direction dir) {
+            foreach (var edge in a.InEdges) {
+
+                if (PointComparer.GetPureDirection(edge.SourcePoint, a.Point) == dir) {
+                    return edge;
+                }
+            }
+
+            foreach (var edge in a.OutEdges) {
+                if (PointComparer.GetPureDirection(a.Point, edge.TargetPoint) == dir) {
+                    return edge;
+                }
+            }
+            return null;
         }
 
         static internal Point FindBendPointBetween(Point sourcePoint, Point targetPoint, Direction finalEdgeDir) {

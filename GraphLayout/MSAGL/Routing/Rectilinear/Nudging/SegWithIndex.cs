@@ -3,7 +3,9 @@ using Microsoft.Msagl.Core.Geometry;
 
 namespace Microsoft.Msagl.Routing.Rectilinear.Nudging
 {
+#pragma warning disable CS0659 // Type overrides Object.Equals(object o) but does not override Object.GetHashCode()
     internal class SegWithIndex {
+#pragma warning restore CS0659 // Type overrides Object.Equals(object o) but does not override Object.GetHashCode()
         internal Point[] Points;
         internal int I;//offset
     
@@ -11,9 +13,6 @@ namespace Microsoft.Msagl.Routing.Rectilinear.Nudging
             Debug.Assert(i<pts.Length&&i>=0);
             Points = pts;
             I = i;
-#if SHARPKIT //https://code.google.com/p/sharpkit/issues/detail?id=289 Support Dictionary directly based on object's GetHashCode
-            UpdateHashKey();
-#endif
         }
 
         internal Point Start {get{return Points[I];}}
@@ -24,23 +23,7 @@ namespace Microsoft.Msagl.Routing.Rectilinear.Nudging
             return other.Points== Points&& other.I == I;
         }
 
-        public override int GetHashCode() {
-#if !SHARPKIT //https://code.google.com/p/sharpkit/issues/detail?id=372; SharpKit/Colin: unchecked is not supported
-            unchecked {
-#endif
-                return (Points.GetHashCode() * 397) ^ I;
-#if !SHARPKIT //https://code.google.com/p/sharpkit/issues/detail?id=372
-            }
-#endif
-        }
-
-#if SHARPKIT //https://code.google.com/p/sharpkit/issues/detail?id=289 Support Dictionary directly based on object's GetHashCode
-        private SharpKit.JavaScript.JsString _hashKey;
-        private void UpdateHashKey()
-        {
-            _hashKey = GetHashCode().ToString();
-        }
-#endif
+        
 
     }
 }

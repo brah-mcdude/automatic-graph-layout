@@ -62,7 +62,7 @@ namespace Microsoft.Msagl.Routing.Rectilinear {
         private readonly bool wantReflections;
 
         // This is the tree of rectangle nodes of the input obstacles' padded encompassing polylines.
-        internal ObstacleTree ObstacleTree = new ObstacleTree();
+        internal ObstacleTree ObsTree = new ObstacleTree();
 
         // The scanline of obstacle sides, for processing events.
         protected RectilinearScanLine scanLine;
@@ -94,7 +94,7 @@ namespace Microsoft.Msagl.Routing.Rectilinear {
             // Generate the Polyline tree from the padded shapes.  ObstacleTree allows us to do
             // obstacle hit-testing for dynamic obstacles, as well as providing input for the Nudger.
             // Each PolylinePoint contains a reference to the Polyline of which it is a member.
-            if (null == ObstacleTree.Root) {
+            if (null == ObsTree.Root) {
                 return;
             }
             
@@ -104,18 +104,6 @@ namespace Microsoft.Msagl.Routing.Rectilinear {
             // with this sweep, to save memory; but we may enqueue intersection events in the perpendicular
             // direction during this sweep.
             InitializeEventQueue(ScanDirection.HorizontalInstance);
-
-            // For the first sweep, EnqueueBottomVertexEvents calculates our min/max boundaries.
-            // Validate them here; we need to have enough room to create the sentinels.  We need
-            // only the Padding of the adjacent obstacle(s) for correct line spacing outside these
-            // extreme obstacles, so don't need to pad the sentinels.
-            if ((ObstacleTree.GraphBox.Left <= (Double.MinValue + SentinelOffset))
-                || (ObstacleTree.GraphBox.Bottom <= (Double.MinValue + SentinelOffset))
-                || (ObstacleTree.GraphBox.Right >= (Double.MaxValue - SentinelOffset))
-                || (ObstacleTree.GraphBox.Top >= (Double.MaxValue - SentinelOffset))
-                ) {
-                throw new InvalidOperationException("One or more obstacle boundaries are out of range");
-            }
 
             // Create the sentinels and add them to the scanline.  Do NOT add them to the event queue
             // because we're not going to close them.  We're also effectively adding only the inner side
@@ -129,16 +117,16 @@ namespace Microsoft.Msagl.Routing.Rectilinear {
             int scanlineSentinelOrdinal = Obstacle.FirstSentinelOrdinal;
 
             // Low sentinel...
-            var lowerCorner = new Point(ObstacleTree.GraphBox.Left - SentinelOffset, ObstacleTree.GraphBox.Bottom - SentinelOffset);
-            var upperCorner = new Point(ObstacleTree.GraphBox.Left - SentinelOffset, ObstacleTree.GraphBox.Top + SentinelOffset);
+            var lowerCorner = new Point(ObsTree.GraphBox.Left - SentinelOffset, ObsTree.GraphBox.Bottom - SentinelOffset);
+            var upperCorner = new Point(ObsTree.GraphBox.Left - SentinelOffset, ObsTree.GraphBox.Top + SentinelOffset);
             var sentinel = Obstacle.CreateSentinel(lowerCorner, upperCorner, ScanDirection, scanlineSentinelOrdinal++);
-            scanLine.Insert(sentinel.ActiveHighSide, ObstacleTree.GraphBox.LeftBottom);
+            scanLine.Insert(sentinel.ActiveHighSide, ObsTree.GraphBox.LeftBottom);
 
             // High sentinel...
-            lowerCorner = new Point(ObstacleTree.GraphBox.Right + SentinelOffset, ObstacleTree.GraphBox.Bottom - SentinelOffset);
-            upperCorner = new Point(ObstacleTree.GraphBox.Right + SentinelOffset, ObstacleTree.GraphBox.Top + SentinelOffset);
+            lowerCorner = new Point(ObsTree.GraphBox.Right + SentinelOffset, ObsTree.GraphBox.Bottom - SentinelOffset);
+            upperCorner = new Point(ObsTree.GraphBox.Right + SentinelOffset, ObsTree.GraphBox.Top + SentinelOffset);
             sentinel = Obstacle.CreateSentinel(lowerCorner, upperCorner, ScanDirection, scanlineSentinelOrdinal++);
-            scanLine.Insert(sentinel.ActiveLowSide, ObstacleTree.GraphBox.LeftBottom);
+            scanLine.Insert(sentinel.ActiveLowSide, ObsTree.GraphBox.LeftBottom);
 
             // Process the Hscan events.`
             DevTraceInfoVgGen(1, "Processing Horizontal Scan events");
@@ -151,16 +139,16 @@ namespace Microsoft.Msagl.Routing.Rectilinear {
             InitializeEventQueue(ScanDirection.VerticalInstance);
 
             // Lower sentinel...
-            lowerCorner = new Point(ObstacleTree.GraphBox.Left - SentinelOffset, ObstacleTree.GraphBox.Bottom - SentinelOffset);
-            upperCorner = new Point(ObstacleTree.GraphBox.Right + SentinelOffset, ObstacleTree.GraphBox.Bottom - SentinelOffset);
+            lowerCorner = new Point(ObsTree.GraphBox.Left - SentinelOffset, ObsTree.GraphBox.Bottom - SentinelOffset);
+            upperCorner = new Point(ObsTree.GraphBox.Right + SentinelOffset, ObsTree.GraphBox.Bottom - SentinelOffset);
             sentinel = Obstacle.CreateSentinel(lowerCorner, upperCorner, ScanDirection, scanlineSentinelOrdinal++);
-            scanLine.Insert(sentinel.ActiveHighSide, ObstacleTree.GraphBox.LeftBottom);
+            scanLine.Insert(sentinel.ActiveHighSide, ObsTree.GraphBox.LeftBottom);
 
             // Upper sentinel
-            lowerCorner = new Point(ObstacleTree.GraphBox.Left - SentinelOffset, ObstacleTree.GraphBox.Top + SentinelOffset);
-            upperCorner = new Point(ObstacleTree.GraphBox.Right + SentinelOffset, ObstacleTree.GraphBox.Top + SentinelOffset);
+            lowerCorner = new Point(ObsTree.GraphBox.Left - SentinelOffset, ObsTree.GraphBox.Top + SentinelOffset);
+            upperCorner = new Point(ObsTree.GraphBox.Right + SentinelOffset, ObsTree.GraphBox.Top + SentinelOffset);
             sentinel = Obstacle.CreateSentinel(lowerCorner, upperCorner, ScanDirection, scanlineSentinelOrdinal);
-            scanLine.Insert(sentinel.ActiveLowSide, ObstacleTree.GraphBox.LeftBottom);
+            scanLine.Insert(sentinel.ActiveLowSide, ObsTree.GraphBox.LeftBottom);
 
             // Process the Vscan events.
             DevTraceInfoVgGen(1, "Processing Vertical Scan events");
@@ -251,12 +239,12 @@ namespace Microsoft.Msagl.Routing.Rectilinear {
             ScanDirection = scanDir;
             eventQueue.Reset(ScanDirection);
             EnqueueBottomVertexEvents();
-            scanLine = new RectilinearScanLine(ScanDirection, ObstacleTree.GraphBox.LeftBottom);
+            scanLine = new RectilinearScanLine(ScanDirection, ObsTree.GraphBox.LeftBottom);
             lookaheadScan = new LookaheadScan(ScanDirection);
         }
 
         void EnqueueBottomVertexEvents() {
-            foreach (var obstacle in ObstacleTree.GetAllPrimaryObstacles()) {
+            foreach (var obstacle in ObsTree.GetAllPrimaryObstacles()) {
                 PolylinePoint bottomVertex = GetOpenVertex(obstacle.VisibilityPolyline);
                 eventQueue.Enqueue(new OpenVertexEvent(obstacle, bottomVertex));
             }
@@ -556,7 +544,7 @@ namespace Microsoft.Msagl.Routing.Rectilinear {
         }
 
         internal virtual void Clear() {
-            ObstacleTree.Clear();
+            ObsTree.Clear();
             eventQueue = new EventQueue();
             HorizontalScanSegments = new ScanSegmentTree(ScanDirection.HorizontalInstance);
             VerticalScanSegments = new ScanSegmentTree(ScanDirection.VerticalInstance);
@@ -826,7 +814,7 @@ namespace Microsoft.Msagl.Routing.Rectilinear {
                     && SideReflectsUpward(highSide)) {
                 var nborSideNode = this.scanLine.NextHigh(highSideNode);
                 if ((nborSideNode.Item is LowObstacleSide) && this.SideReflectsDownward(nborSideNode.Item)) {
-                    if (!obstacle.IsOverlapped || !this.ObstacleTree.PointIsInsideAnObstacle(highSide.Start, this.ScanDirection)) {
+                    if (!obstacle.IsOverlapped || !this.ObsTree.PointIsInsideAnObstacle(highSide.Start, this.ScanDirection)) {
                         this.StoreLookaheadSite(nborSideNode.Item.Obstacle, highSide, highSide.Start, wantExtreme: true);
                         LoadReflectionEvents(nborSideNode.Item);
                     }
@@ -957,9 +945,9 @@ namespace Microsoft.Msagl.Routing.Rectilinear {
         } // end ProcessEvent(HighReflectionEvent)
 
         internal Point MakeInBoundsLocation(Point location) {
-            double xPos = Math.Max(location.X, ObstacleTree.GraphBox.Left);
-            double yPos = Math.Max(location.Y, ObstacleTree.GraphBox.Bottom);
-            return new Point(Math.Min(xPos, ObstacleTree.GraphBox.Right), Math.Min(yPos, ObstacleTree.GraphBox.Top));
+            double xPos = Math.Max(location.X, ObsTree.GraphBox.Left);
+            double yPos = Math.Max(location.Y, ObsTree.GraphBox.Bottom);
+            return new Point(Math.Min(xPos, ObsTree.GraphBox.Right), Math.Min(yPos, ObsTree.GraphBox.Top));
         }
 
         internal bool IsInBounds(VisibilityVertex vertex) {

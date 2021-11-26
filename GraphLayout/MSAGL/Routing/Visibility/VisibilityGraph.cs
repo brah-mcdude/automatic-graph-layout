@@ -75,10 +75,10 @@ namespace Microsoft.Msagl.Routing.Visibility {
       var polygons = holes.Select(hole => new Polygon(hole)).ToList();
 
       TangentVisibilityGraphCalculator.AddTangentVisibilityEdgesToGraph(polygons, visibilityGraph);
-      PointVisibilityCalculator.CalculatePointVisibilityGraph(holes, visibilityGraph, pathStart,
-                                                              VisibilityKind.Tangent, out sourceVertex);
-      PointVisibilityCalculator.CalculatePointVisibilityGraph(holes, visibilityGraph, pathEnd,
-                                                              VisibilityKind.Tangent, out targetVertex);
+      sourceVertex = PointVisibilityCalculator.CalculatePointVisibilityGraph(holes, visibilityGraph, pathStart,
+                                                              VisibilityKind.Tangent);
+      targetVertex = PointVisibilityCalculator.CalculatePointVisibilityGraph(holes, visibilityGraph, pathEnd,
+                                                              VisibilityKind.Tangent);
 
       return visibilityGraph;
     }
@@ -228,7 +228,7 @@ namespace Microsoft.Msagl.Routing.Visibility {
       var edge = new VisibilityEdge(source, target);
 
       source.OutEdges.Insert(edge);
-      target.InEdges.Add(edge);
+      target.AddInEdge(edge);
       return edge;
     }
 
@@ -239,7 +239,7 @@ namespace Microsoft.Msagl.Routing.Visibility {
     static internal void AddEdge(VisibilityEdge edge) {
       Debug.Assert(edge.Source != edge.Target);
       edge.Source.OutEdges.Insert(edge);
-      edge.Target.InEdges.Add(edge);
+      edge.Target.AddInEdge(edge);
     }
 
     internal VisibilityEdge AddEdge(Point source, Point target) {
@@ -260,7 +260,7 @@ namespace Microsoft.Msagl.Routing.Visibility {
         targetV = AddVertex(target);
       edge = new VisibilityEdge(sourceV, targetV);
       sourceV.OutEdges.Insert(edge);
-      targetV.InEdges.Add(edge);
+      targetV.AddInEdge(edge);
       return edge;
     }
 
@@ -294,7 +294,7 @@ namespace Microsoft.Msagl.Routing.Visibility {
 
       edge = edgeCreator(sourceV, targetV);
       sourceV.OutEdges.Insert(edge);
-      targetV.InEdges.Add(edge);
+      targetV.AddInEdge(edge);
       return edge;
     }
 
@@ -361,7 +361,7 @@ namespace Microsoft.Msagl.Routing.Visibility {
 
     static internal void RemoveEdge(VisibilityEdge edge) {
       edge.Source.OutEdges.Remove(edge);//not efficient!
-      edge.Target.InEdges.Remove(edge);//not efficient
+      edge.Target.RemoveInEdge(edge);//not efficient
     }
 
     public void ClearEdges() {

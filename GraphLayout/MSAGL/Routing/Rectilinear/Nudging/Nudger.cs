@@ -89,7 +89,6 @@ namespace Microsoft.Msagl.Routing.Rectilinear.Nudging {
         internal void Calculate(Direction direction, bool mergePaths) {
             NudgingDirection = direction;
             PathRefiner.RefinePaths(Paths, mergePaths);
-           // ShowPathsDebug(Paths);
             GetPathOrdersAndPathGraph();
             MapAxisEdgesToTheirObstacles();            
             DrawPaths();
@@ -209,8 +208,8 @@ namespace Microsoft.Msagl.Routing.Rectilinear.Nudging {
         void PositionShiftedEdges() {
             //we are using 2*cornerFitRadius for the minimal edge separation
             Solver = new UniformOneDimensionalSolver(EdgeSeparation);
-            foreach (var segment in LongestNudgedSegs)
-                CreateVariablesOfLongestSegment(segment);
+            for (var i = 0; i < LongestNudgedSegs.Count; i++)
+                CreateVariablesOfLongestSegment(LongestNudgedSegs[i]);
             CreateConstraintsOfTheOrder();
             CreateConstraintsBetweenLongestSegments();
             Solver.Solve();
@@ -218,8 +217,10 @@ namespace Microsoft.Msagl.Routing.Rectilinear.Nudging {
         }
 
         void MoveLongestSegsIdealPositionsInsideFeasibleIntervals() {
-            foreach (var seg in LongestNudgedSegs)
+            for (int i = 0; i < this.LongestNudgedSegs.Count; i++) {
+                var seg = this.LongestNudgedSegs[i];
                 MoveLongestSegIdealPositionsInsideFeasibleInterval(seg);
+            }
         }
 
         static void MoveLongestSegIdealPositionsInsideFeasibleInterval(LongestNudgedSegment seg) {
@@ -668,7 +669,7 @@ namespace Microsoft.Msagl.Routing.Rectilinear.Nudging {
 
 
         void BoundAxisEdgeAdjacentToObstaclePort(Port port, AxisEdge axisEdge) {
-            if (port is WaypointPort || (port.Curve == null ))
+            if (port.Curve == null )
                 BoundAxisByPoint(port.Location, axisEdge);
             else  {
                 if (port.Curve.BoundingBox.Contains(port.Location))
@@ -709,9 +710,8 @@ namespace Microsoft.Msagl.Routing.Rectilinear.Nudging {
                 NudgingDirection == Direction.East ? (PointProjection)FreeSpaceFinder.MinusY : FreeSpaceFinder.X;
 
             LongestNudgedSegs = new List<LongestNudgedSegment>();
-            foreach (var path in Paths)
-                CreateLongestNudgedSegmentsForPath(path, projectionToPerp);
-
+            for (int i = 0; i < Paths.Count; i++) 
+                CreateLongestNudgedSegmentsForPath(Paths[i], projectionToPerp);
         }
 
 
@@ -865,18 +865,17 @@ namespace Microsoft.Msagl.Routing.Rectilinear.Nudging {
 
             while (en.MoveNext()) {
                 var dir = (en.Current - b).CompassDirection;
-                if (dir == prevDir || CompassVector.OppositeDir(dir) == prevDir || dir == Direction.None) //we continue walking along the same straight line, maybe going backwards!
-                    b = en.Current;
-                else {
+                if (!(dir == prevDir || CompassVector.OppositeDir(dir) == prevDir || dir == Direction.None)) { //we continue walking along the same straight line, maybe going backwards!
                     if (!ApproximateComparer.Close(a, b)) {//make sure that we are not returning the same point twice                        
-                        yield return a=Rectilinearise(a, b);
+                        yield return a = Rectilinearise(a, b);
                     }
-                    b = en.Current;
                     prevDir = dir;
                 }
+                b = en.Current;
+
             }
             if (!ApproximateComparer.Close(a, b))
-                yield return Rectilinearise(a,b);
+                yield return Rectilinearise(a, b);
         }
 
 

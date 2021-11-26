@@ -20,7 +20,7 @@ namespace Microsoft.Msagl.Core.ProjectionSolver{
     /// <summary>
     /// just a convenient interface to the real solver
     /// </summary>
-    public class SolverShell : ISolverShell{
+    public class SolverShell {
 
         const double FixedVarWeight = 10e8;
 
@@ -192,13 +192,13 @@ namespace Microsoft.Msagl.Core.ProjectionSolver{
         bool AdjustConstraintsForMovedFixedVarSet(Set<int> movedFixedVars){
             while (movedFixedVars.Count>0){
                 var fixedVar = movedFixedVars.First();
-                if(!AdjustSubtreeOfFixedVar(fixedVar, ref movedFixedVars))
+                if(!AdjustSubtreeOfFixedVar(fixedVar, movedFixedVars))
                     return false;
             }
             return true;
         }
 
-        bool AdjustSubtreeOfFixedVar(int fixedVar, ref Set<int> movedFixedVars){
+        bool AdjustSubtreeOfFixedVar(int fixedVar, Set<int> movedFixedVars){
             bool successInAdjusting;
             var neighbors=AdjustConstraintsOfNeighborsOfFixedVariable(fixedVar, out successInAdjusting);
             if (!successInAdjusting)

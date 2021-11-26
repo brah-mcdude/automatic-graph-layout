@@ -54,7 +54,7 @@ namespace Microsoft.Msagl.Routing.Rectilinear {
                                             oport.Obstacle.VisibilityBoundingBox, UnpaddedBorderIntersect, outDir));
             IList<IntersectionInfo> xxs = Curve.GetAllIntersections(lineSeg, oport.Obstacle.VisibilityPolyline, true /*liftIntersections*/);
             Debug.Assert(1 == xxs.Count, "Expected one intersection");
-            this.VisibilityBorderIntersect = ApproximateComparer.Round(SpliceUtility.RawIntersection(xxs[0], UnpaddedBorderIntersect));
+            this.VisibilityBorderIntersect = ApproximateComparer.Round(xxs[0].IntersectionPoint);
 
             this.MaxVisibilitySegment = obstacleTree.CreateMaxVisibilitySegment(this.VisibilityBorderIntersect,
                     this.OutwardDirection, out this.pointAndCrossingsList);
@@ -127,8 +127,8 @@ namespace Microsoft.Msagl.Routing.Rectilinear {
         internal void AddToAdjacentVertex(TransientGraphUtility transUtil, VisibilityVertex targetVertex
                             , Rectangle limitRect, bool routeToCenter) {
             VisibilityVertex borderVertex = transUtil.VisGraph.FindVertex(this.VisibilityBorderIntersect);
-            if (null != borderVertex) {
-                ExtendFromBorderVertex(transUtil, borderVertex, limitRect, routeToCenter);
+            if (borderVertex != null) {
+                ExtendEdgeChain(transUtil, borderVertex, borderVertex, limitRect, routeToCenter);
                 return;
             }
 
@@ -162,12 +162,7 @@ namespace Microsoft.Msagl.Routing.Rectilinear {
             }
             ExtendEdgeChain(transUtil, borderVertex, targetVertex, limitRect, routeToCenter);
         }
-            
-        internal void ExtendFromBorderVertex(TransientGraphUtility transUtil, VisibilityVertex borderVertex
-                            , Rectangle limitRect, bool routeToCenter) {
-            ExtendEdgeChain(transUtil, borderVertex, borderVertex, limitRect, routeToCenter);
-        }
-
+        
         internal void ExtendEdgeChain(TransientGraphUtility transUtil, VisibilityVertex paddedBorderVertex
                                 , VisibilityVertex targetVertex, Rectangle limitRect, bool routeToCenter) {
             // Extend the edge chain to the opposite side of the limit rectangle.
@@ -183,12 +178,7 @@ namespace Microsoft.Msagl.Routing.Rectilinear {
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1822:MarkMembersAsStatic")]
-        internal void RemoveFromGraph() {
-            // Currently all transient removals and edge restorations are done by TransientGraphUtility itself
-            // and ObstaclePort clears itself so there's nothing to do.
-        }
-
+        
         /// <summary>
         /// </summary>
         /// <returns></returns>

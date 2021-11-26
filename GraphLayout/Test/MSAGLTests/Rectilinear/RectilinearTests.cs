@@ -1451,134 +1451,7 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
             RunSimpleWaypoints(4, multiplePaths: false, wantTopRect:false);
         }
 
-        [TestMethod]
-        [Timeout(2000)]
-        [Description("Test waypoints that cross the graph from multiple out of bounds locations.")]
-        public void Waypoints_MultipleOobCrossesGraph()
-        {
-            var obstacles = CreateTwoTestSquares();
-
-            var a = obstacles[0]; // left square
-            var b = obstacles[1]; // right square
-            var abox = a.BoundingBox;
-            var bbox = b.BoundingBox;
-
-            var portA = MakeAbsoluteObstaclePort(a, abox.Center);
-            var portB = MakeAbsoluteObstaclePort(b, bbox.Center);
-
-            var router = CreateRouter(obstacles);
-            var connectAtoB = AddRoutingPorts(router, portA, portB);
-
-            connectAtoB.Waypoints = new List<Point>
-            {
-                abox.LeftTop + new Point(-10, -10),
-                abox.RightTop + new Point(-10, 10),
-                abox.RightBottom + new Point(10, -10),
-                bbox.LeftTop + new Point(10, 10),
-                bbox.LeftBottom + new Point(10, -10),
-                bbox.RightBottom + new Point(10, 10),
-                abox.LeftBottom + new Point(-10, 10),
-                abox.Center + new Point(((bbox.Center.X - abox.Center.X) / 2), 10)
-            };
-            this.RunAndShowGraph(router);
-        }
-
-        [TestMethod]
-        [Timeout(2000)]
-        [Description("Test rerouting and cleaning up obsolete waypoint FreePoints.")]
-        public void Waypoints2_Multiple_Routings_At_Different_Levels() 
-        {
-            var obstacles = CreateTwoTestSquares();
-
-            var a = obstacles[0]; // left square
-            var b = obstacles[1]; // right square
-            var abox = a.BoundingBox;
-            var bbox = b.BoundingBox;
-
-            var portA = MakeAbsoluteObstaclePort(a, abox.Center);
-            var portB = MakeAbsoluteObstaclePort(b, bbox.Center);
-
-            var router = CreateRouter(obstacles);
-            var connectAtoB = AddRoutingPorts(router, portA, portB);
-
-            // Add the waypoints in a line between the obstacles
-            for (int ii = 1; ii <= 5; ++ii)
-            {
-                connectAtoB.Waypoints = new List<Point>
-                {
-                    abox.RightTop + new Point(25, -5 * ii),     // between obstacles, left and above center but below top
-                    bbox.LeftTop + new Point(-25, -5 * ii)      // between obstacles, right and above center but below top
-                };
-                router.Run();
-                ShowGraph(router);
-            }
-        }
-
-        [TestMethod]
-        [Timeout(2000)]
-        [Description("Test routing between out of bounds and inbounds waypoints.")]
-        public void Waypoints3_Oob()
-        {
-            var obstacles = CreateTwoTestSquares();
-
-            var a = obstacles[0]; // left square
-            var b = obstacles[1]; // right square
-            var abox = a.BoundingBox;
-            var bbox = b.BoundingBox;
-
-            var portA = MakeAbsoluteObstaclePort(a, abox.Center);
-            var portB = MakeAbsoluteObstaclePort(b, bbox.Center);
-
-            var router = CreateRouter(obstacles);
-            var connectAtoB = AddRoutingPorts(router, portA, portB);
-
-            connectAtoB.Waypoints = new List<Point>
-            {
-                abox.RightTop + new Point(25, 15),      // between obstacles, left and above center but below top
-                abox.RightTop + new Point((bbox.Left - abox.Right)/2, -5),
-                bbox.LeftTop + new Point(-25, 15)       // between obstacles, right and above center but below top
-            };
-            router.Run();
-            ShowGraph(router);
-        }
-
-        [TestMethod]
-        [Timeout(2000)]
-        [Description("Test routing between out of bounds and inbounds waypoints.")]
-        public void Waypoints2_Oob_HiddenSourceAndTarget()
-        {
-            var obstacles = CreateTwoTestSquares();
-
-            // Add some blocking obstacles to prevent line-of-sight connection from source/target to the graphBox
-            // boundary.
-            obstacles.Add(this.PolylineFromRectanglePoints(new Point(75, 105), new Point(85, 125)));
-            obstacles.Add(this.PolylineFromRectanglePoints(new Point(95, 105), new Point(135, 125)));
-            obstacles.Add(this.PolylineFromRectanglePoints(new Point(25, 105), new Point(70, 125)));
-
-            obstacles.Add(this.PolylineFromRectanglePoints(new Point(185, 105), new Point(225, 125)));
-            obstacles.Add(this.PolylineFromRectanglePoints(new Point(235, 105), new Point(245, 125)));
-            obstacles.Add(this.PolylineFromRectanglePoints(new Point(250, 105), new Point(295, 125)));
-
-            var a = obstacles[0]; // left square
-            var b = obstacles[1]; // right square
-            var abox = a.BoundingBox;
-            var bbox = b.BoundingBox;
-
-            var portA = MakeAbsoluteObstaclePort(a, abox.Center);
-            var portB = MakeAbsoluteObstaclePort(b, bbox.Center);
-
-            var router = CreateRouter(obstacles);
-            var connectAtoB = AddRoutingPorts(router, portA, portB);
-
-            connectAtoB.Waypoints = new List<Point>
-            {
-                abox.RightTop + new Point(25, 35),      // between obstacles, left and above center but below top
-                bbox.LeftTop + new Point(-25, 35)       // between obstacles, right and above center but below top
-            };
-            router.Run();
-            ShowGraph(router);
-        }
-
+        
         [TestMethod]
         [Timeout(2000)]
         [Description("Test handling of collinear OpenVertex and CloseVertex events.")]
@@ -3647,98 +3520,7 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
             DoRouting(obstacles, routings, null /*freePorts*/);
         }
 
-        [TestMethod]
-        [Timeout(2000)]
-        [Description("Route from an obstacle inside a group to an obstacle inside another group, passing through 2 waypoints outside the groups; note the dogleg on the rightmost waypoint.")]
-        public void Group_Waypoints2_Outside_Group()
-        {
-            Group_Waypoints_Worker(2, /*inside:*/ false, /*nested:*/ false);
-        }
-
-        [TestMethod]
-        [Timeout(2000)]
-        [Description("Route from an obstacle inside a group to an obstacle inside another group, passing through a waypoint inside each group; note the dogleg on the rightmost waypoint.")]
-        public void Group_Waypoints2_Inside_Group()
-        {
-            Group_Waypoints_Worker(2, /*inside:*/ true, /*nested:*/ false);
-        }
-
-        [TestMethod]
-        [Timeout(2000)]
-        [Description("Route from an obstacle inside a nested group to an obstacle inside another nested group, passing through a waypoint inside each nested group; note the dogleg on the rightmost waypoint.")]
-        public void Group_Waypoints2_Inside_Nested()
-        {
-            Group_Waypoints_Worker(2, /*inside:*/ true, /*nested:*/ true);
-        }
-
-        [TestMethod]
-        [Timeout(2000)]
-        [Description("Route from an obstacle inside a group to an obstacle inside another group, passing through 3 waypoints outside the groups; note the third waypoint removes the dogleg on the rightmost waypoint.")]
-        public void Group_Waypoints3_Outside_Group()
-        {
-            Group_Waypoints_Worker(3, /*inside:*/ false, /*nested:*/ false);
-        }
-
-        [TestMethod]
-        [Timeout(2000)]
-        [Description("Route from an obstacle inside a group to an obstacle inside another group, passing through a waypoint inside each group and a third waypoint between the groups and outside any group; note the third waypoint removes the dogleg on the rightmost waypoint.")]
-        public void Group_Waypoints3_Inside_Group()
-        {
-            Group_Waypoints_Worker(3, /*inside:*/ true, /*nested:*/ false);
-        }
-
-        [TestMethod]
-        [Timeout(2000)]
-        [Description("Route from an obstacle inside a nested group to an obstacle inside another nested group, passing through a waypoint inside each nested group and a third waypoint between the groups and outside any group; note the third waypoint removes the dogleg on the rightmost waypoint.")]
-        public void Group_Waypoints3_Inside_Nested()
-        {
-            Group_Waypoints_Worker(3, /*inside:*/ true, /*nested:*/ true);
-        }
-
-        private void Group_Waypoints_Worker(int numWaypoints, bool inside, bool nested)
-        {
-            var obstacles = new List<Shape>();
-
-            // Add initial singles first.
-            Shape s1, s2;
-            obstacles.Add(s1 = PolylineFromRectanglePoints(new Point(30, 30), new Point(40, 40)));
-            s1.UserData = "s1";
-            obstacles.Add(s2 = PolylineFromRectanglePoints(new Point(130, 30), new Point(140, 40)));
-            s2.UserData = "s2";
-
-            // The first groups' sizes depend on whether the Waypoints're to be inside or out.
-            Shape g1, g2;
-            obstacles.Add(g1 = PolylineFromRectanglePoints(new Point(20, 20), new Point(inside ? 70 : 50, 50)));
-            g1.AddChild(s1);
-            obstacles.Add(g2 = PolylineFromRectanglePoints(new Point(inside ? 100 : 120, 20), new Point(150, 50)));
-            g2.AddChild(s2);
-            if (nested)
-            {
-                // inside is always true if nested.
-                Shape group1Nested, group2Nested;
-                obstacles.Add(group1Nested = PolylineFromRectanglePoints(new Point(10, 10), new Point(80, 60)));
-                group1Nested.AddChild(g1);
-                obstacles.Add(group2Nested = PolylineFromRectanglePoints(new Point(90, 10), new Point(160, 60)));
-                group2Nested.AddChild(g2);
-            }
-
-            // The routing is always between the obstaclesm, via the waypoints.
-            var ps1 = MakeSingleRelativeObstaclePort(s1, new Point());
-            var ps2 = MakeSingleRelativeObstaclePort(s2, new Point());
-            var routings = new List<EdgeGeometry> { CreateRouting(ps1, ps2) };
-
-            // Add the waypoints.
-            var waypoints = new List<Point> { new Point(60, 30) };
-            if (3 == numWaypoints)
-            {
-                waypoints.Add(new Point(85, 40));
-            }
-            waypoints.Add(new Point(110, 40));
-            routings.First().Waypoints = waypoints.ToArray();
-
-            DoRouting(obstacles, routings, null /*freePorts*/);
-        }
-
+        
         private class PointAndShape
         {
             internal readonly Point Intersect;
@@ -3904,7 +3686,7 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
             var routings = new List<EdgeGeometry> { CreateRouting(ps1, ps2) };
 
             var router = DoRouting(obstacles, routings, null /*freePorts*/);
-            var group1 = router.ObstacleTree.GetAllGroups().First();
+            var group1 = router.ObsTree.GetAllGroups().First();
             VerifyReflectionSegmentsOutsideGroup(group1, router.GraphGenerator.HorizontalScanSegments.Segments, base.UseSparseVisibilityGraph ? 0 : 7);
             VerifyReflectionSegmentsOutsideGroup(group1, router.GraphGenerator.VerticalScanSegments.Segments, base.UseSparseVisibilityGraph ? 0 : 8);
         }
@@ -4088,91 +3870,7 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
             AddAllShiftedRectangles(obstacles, shiftX, shiftY);
             DoRouting(obstacles, CreateRoutingBetweenObstacles(obstacles, 0, 1));
         }
-
-        [TestMethod]
-        [Timeout(2000)]
-        [Description("Create two obstacles separately landlocked by overlapping rectangles, with non-overlapped waypoints between them.")]
-        public void Route_Between_Two_Separately_Disconnected_Obstacles_With_Waypoints()
-        {
-            const int initialCenter = 120;
-            const int shiftX = 300;
-            const int shiftY = 100;
-            var obstacles = new List<Shape> 
-            {
-                // The first two obstacles to route between.
-                this.CreateSquare(new Point(initialCenter, initialCenter), 20),
-                this.CreateSquare(new Point(initialCenter + shiftX, initialCenter + shiftY), 20)
-            };
-
-            AddAllShiftedRectangles(obstacles, shiftX, shiftY);
-
-            var routings = this.CreateRoutingBetweenObstacles(obstacles, 0, 1);
-            var edgeGeom = routings.First();
-            edgeGeom.Waypoints = new[] {
-                    new Point(initialCenter + (shiftX/2) - 5, initialCenter + (shiftY*2)),
-                    new Point(initialCenter + (shiftX/2) + 5, initialCenter - shiftY),
-            };
-            DoRouting(obstacles, routings);
-        }
-
-        [TestMethod]
-        [Timeout(2000)]
-        [Description("Create two non-overlapped obstacles, with separately landlocked waypoints between them.")]
-        public void Route_Between_Two_Obstacles_With_Separately_Disconnected_Waypoints()
-        {
-            const int initialCenter = 120;
-            const int initialOffset = 70;   // for easier verification, make this be just inside the convex hull.
-            const int shiftX = 300;
-            const int shiftY = 100;
-            var obstacles = new List<Shape> 
-            {
-                // The first two obstacles to route between.
-                this.CreateSquare(new Point(initialCenter - initialOffset, initialCenter - initialOffset), 20),
-                this.CreateSquare(new Point(initialCenter + initialOffset + shiftX, initialCenter + initialOffset + shiftY), 20)
-            };
-
-            AddAllShiftedRectangles(obstacles, shiftX, shiftY);
-
-            var routings = this.CreateRoutingBetweenObstacles(obstacles, 0, 1);
-            var edgeGeom = routings.First();
-            edgeGeom.Waypoints = new[]
-            {
-                new Point(initialCenter, initialCenter),
-                new Point(initialCenter + shiftX, initialCenter + shiftY),
-            };
-            DoRouting(obstacles, routings);
-        }
-
-        [TestMethod]
-        [Timeout(2000)]
-        [Description("Create two non-overlapped obstacles with connected waypoints, with separately landlocked waypoints between them.")]
-        public void Route_Between_Two_Obstacles_With_Connected_And_Disconnected_Waypoints()
-        {
-            const int initialCenter = 120;
-            const int initialOffset = 70;   // for easier verification, make this be just inside the convex hull.
-            const int shiftX = 300;
-            const int shiftY = 100;
-            var obstacles = new List<Shape> 
-            {
-                // The first two obstacles to route between.
-                this.CreateSquare(new Point(initialCenter - initialOffset, initialCenter - initialOffset), 20),
-                this.CreateSquare(new Point(initialCenter + initialOffset + shiftX, initialCenter + initialOffset + shiftY), 20)
-            };
-
-            AddAllShiftedRectangles(obstacles, shiftX, shiftY);
-
-            var routings = this.CreateRoutingBetweenObstacles(obstacles, 0, 1);
-            var edgeGeom = routings.First();
-            edgeGeom.Waypoints = new[]
-            {
-                new Point(initialCenter - 30, initialCenter),
-                new Point(initialCenter + (shiftX/2) - 5, initialCenter + (shiftY*2)),
-                new Point(initialCenter + (shiftX/2) + 5, initialCenter - shiftY),
-                new Point(initialCenter + shiftX + 30, initialCenter + shiftY),
-            };
-            DoRouting(obstacles, routings);
-        }
-
+        
         private static void AddAllShiftedRectangles(List<Shape> obstacles, int shiftX, int shiftY)
         {
             AddShiftedAngledRectangles(new[] { new Point(100, 10), new Point(80, 30), new Point(210, 160), new Point(230, 140) },
@@ -4700,9 +4398,9 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
         private void VerifyAllObstaclesInClump(RectilinearEdgeRouterWrapper router, Shape[] siblingShapes = null, bool show = true)
         {
             router.CreateVisibilityGraph();
-            var clump = router.ObstacleTree.GetAllObstacles().First().Clump;
+            var clump = router.ObsTree.GetAllObstacles().First().Clump;
             Validate.IsNotNull(clump, "Obstacles should be in a clump");
-            foreach (var obstacle in router.ObstacleTree.GetAllObstacles())
+            foreach (var obstacle in router.ObsTree.GetAllObstacles())
             {
                 var expectClump = IsObstacleInShapes(siblingShapes, obstacle);
                 Validate.IsTrue(obstacle.IsRectangle, "Clumped obstacles should always be rectangles");
@@ -4900,9 +4598,9 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
         private void VerifyAllObstaclesInConvexHull(RectilinearEdgeRouterWrapper router, Shape[] hullShapes = null, bool show = true) 
         {
             router.CreateVisibilityGraph();
-            var convexHull = router.ObstacleTree.GetAllObstacles().First().ConvexHull;
+            var convexHull = router.ObsTree.GetAllObstacles().First().ConvexHull;
             Validate.IsNotNull(convexHull, "convex hull should have been created");
-            foreach (var obstacle in router.ObstacleTree.GetAllObstacles())
+            foreach (var obstacle in router.ObsTree.GetAllObstacles())
             {
                 var expectHull = IsObstacleInShapes(hullShapes, obstacle);
                 if (expectHull) 
@@ -4961,20 +4659,7 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
         public void Zero_Obstacle_Graph() 
         {
             var router = this.CreateRouter(new List<Shape>());
-            bool threw = false;
-            try
-            {
-                router.CreateVisibilityGraph();
-                this.ShowGraph(router);
-            } 
-            catch (Exception e) 
-            {
-                threw = true;
-
-                // Don't use "exception" in the message to avoid the word appearing in the errorlog...
-                base.WriteLine(e.Message + " (thrown/caught as expected)");
-            }
-            Validate.IsTrue(threw, "Empty graph did not throw");
+            router.CreateVisibilityGraph();
         }
 
         [TestMethod]
@@ -5084,7 +4769,7 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
             Obstacle group1 = null;
             Obstacle group2 = null;
             Obstacle group3 = null;
-            foreach (var obstacle in router.ObstacleTree.GetAllObstacles()) 
+            foreach (var obstacle in router.ObsTree.GetAllObstacles()) 
             {
                 // No obstacles should be clumped or convex-hulled.
                 Validate.IsFalse(obstacle.IsOverlapped, "objects in convex hulls should not be marked overlapped");
@@ -5153,9 +4838,9 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
             this.RunAndShowGraph(router);
 
             // Reget all obstacles as they have been re-created for the new router.
-            group1 = router.ObstacleTree.GetAllGroups().First();
-            shape1 = router.ObstacleTree.GetAllObstacles().Where(obs => obs.InputShape == s1).First();
-            var shape2 = router.ObstacleTree.GetAllObstacles().Where(obs => obs.InputShape == s2).First();
+            group1 = router.ObsTree.GetAllGroups().First();
+            shape1 = router.ObsTree.GetAllObstacles().Where(obs => obs.InputShape == s1).First();
+            var shape2 = router.ObsTree.GetAllObstacles().Where(obs => obs.InputShape == s2).First();
 
             // Now the shapes should be in clumps.
             Validate.IsFalse(group1.IsInConvexHull, "group1 should not have a convex hull");
@@ -5199,9 +4884,9 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
             this.RunAndShowGraph(router);
 
             // Reget all obstacles as they have been re-created for the new router.
-            group1 = router.ObstacleTree.GetAllGroups().First();
-            shape1 = router.ObstacleTree.GetAllObstacles().Where(obs => obs.InputShape == s1).First();
-            var shape2 = router.ObstacleTree.GetAllObstacles().Where(obs => obs.InputShape == s2).First();
+            group1 = router.ObsTree.GetAllGroups().First();
+            shape1 = router.ObsTree.GetAllObstacles().Where(obs => obs.InputShape == s1).First();
+            var shape2 = router.ObsTree.GetAllObstacles().Where(obs => obs.InputShape == s2).First();
 
             // Now we should have a convex hull for the nonrectangular obstacles.
             Validate.IsTrue(group1.IsInConvexHull, "group1 should have a convex hull");
@@ -5248,8 +4933,8 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
             {
                 this.ShowGraph(router);
             }
-            group1 = router.ObstacleTree.GetAllGroups().First();
-            shape1 = router.ObstacleTree.GetAllObstacles().Where(obs => obs.InputShape == s1).First();
+            group1 = router.ObsTree.GetAllGroups().First();
+            shape1 = router.ObsTree.GetAllObstacles().Where(obs => obs.InputShape == s1).First();
             return obstacles;
         }
 
@@ -5436,52 +5121,6 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
             obstacles[3] = PolylineFromPoints(new [] {new Point(180.0, 60.0), new Point(140.0, 100.0), new Point(200.0, 100.0), new Point(240.0, 60.0) });
 
             this.DoRouting(obstacles, this.CreateRoutingBetweenObstacles(obstacles, 0, 1));
-        }
-
-        [TestMethod]
-        [Timeout(2000)]
-        [Description("Verify near-rectangle detection in Obstacle")]
-        public void NearRectangleDetection() 
-        {
-            // Currently the test allows an angle of 1/1000.  Start is nonzero so all operations are on positive values.
-            const double sideLen = 1000.0;
-            const double start = 10.0;
-            var origPoints = new[]
-                {
-                    new Point(start, start),
-                    new Point(start, sideLen + start),
-                    new Point(sideLen + start, sideLen + start),
-                    new Point(sideLen + start, start)
-                };
-
-            // Verify the initial basePoints detect a rectangle.
-            var obstacle = new Obstacle(PolylineFromPoints(origPoints), false, RectilinearEdgeRouter.DefaultPadding);
-            Validate.AreEqual(true, obstacle.IsRectangle, "(obstacle from basePoints).IsRectangle");
-
-            // Now test the variations on each corner, in and out of range.  Be a little soft on the ranges
-            // due to the creation of the padded polyline adding some variation.
-            TestRectangleDetection(0.5, origPoints, expected: true);
-            TestRectangleDetection(3.0, origPoints, expected: false);
-        }
-
-        private static void TestRectangleDetection(double offset, Point[] origPoints, bool expected) 
-        {
-            var testPoints = (Point[])origPoints.Clone();
-            for (int ii = 0; ii < testPoints.Length; ++ii) 
-            {
-                testPoints[ii] = origPoints[ii] + new Point(0, offset);
-                TestRectangleDetection(testPoints, expected);
-                testPoints[ii] = origPoints[ii] + new Point(offset, 0);
-                TestRectangleDetection(testPoints, expected);
-                testPoints[ii] = origPoints[ii];
-            }
-        }
-
-        private static void TestRectangleDetection(Point[] testPoints, bool expected)
-        {
-            // obstacle ctor calls ConvertToRectangleIfClose()
-            var obstacle = new Obstacle(PolylineFromPoints(testPoints), false, RectilinearEdgeRouter.DefaultPadding);
-            Validate.AreEqual(expected, obstacle.IsRectangle, "(obstacle from testPoints).IsRectangle");
         }
 
         [TestMethod]

@@ -89,11 +89,11 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
             System.Diagnostics.Debug.WriteLine(message);
         }
 
-        internal ObstacleTree ObstacleTree
+        internal ObstacleTree ObsTree
         {
             get
             {
-                return GraphGenerator.ObstacleTree;
+                return GraphGenerator.ObsTree;
             }
         }
 
@@ -101,7 +101,7 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
         {
             base.InitObstacleTree();
             this.ShowObstacleTree();
-            this.allObstacleHierarchy = ObstacleTree.CalculateHierarchy(this.ObstacleTree.GetAllObstacles());
+            this.allObstacleHierarchy = ObstacleTree.CalculateHierarchy(this.ObsTree.GetAllObstacles());
         }
 
         internal override void CreateVisibilityGraph()
@@ -282,7 +282,7 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
             var furthest = start;
             for ( ; ; ) 
             {
-                var next = StaticGraphUtility.FindNextVertex(furthest, dir);
+                var next = StaticGraphUtility.FindAdjacentVertex(furthest, dir);
                 if (next == null)
                 {
                     break;
@@ -308,7 +308,7 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
         private IEnumerable<Obstacle> ConvexHullsCrossedByEdge(VisibilityEdge edge, double tolerance)
         {
             var lineSegment = new LineSegment(edge.SourcePoint, edge.TargetPoint);
-            return this.ObstacleTree.Root.AllHitItems(
+            return this.ObsTree.Root.AllHitItems(
                 lineSegment.BoundingBox, obs => !obs.IsGroup && obs.IsInConvexHull && obs.IsPrimaryObstacle
                         && SegmentCrossesPolylineInterior(lineSegment, obs.VisibilityPolyline, tolerance));
         }
@@ -394,9 +394,7 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
         private void ShowGraphPerPath(Path edgePath, bool lastChance)
         {
             // This is the non-virtual form that calls the virtual/overridden form for the pathPoints.
-            IEnumerable<Path> paths = edgePath.EdgeGeometry.HasWaypoints
-                                    ? base.edgeGeomsToSplittedEdgePaths[edgePath.EdgeGeometry] 
-                                    : new List<Path> { edgePath };
+            IEnumerable<Path> paths =  new List<Path> { edgePath };
             foreach (var path in paths) {
                 // Only verify that this result is non-null if lastChance; otherwise we will retry with additional groups enabled.
                 if (lastChance) {
@@ -443,16 +441,7 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
                 }
             }
         }
-
-        internal override void UniteEdgeCurvesBetweenWaypoints()
-        {
-            if (this.WantPaths)
-            {
-                base.UniteEdgeCurvesBetweenWaypoints();
-            }
-        }
-
-        internal override void FinaliseEdgeGeometries()
+internal override void FinaliseEdgeGeometries()
         {
             if (this.WantPaths)
             {
@@ -587,7 +576,7 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
 
         private void VerifyClumpsAndConvexHulls()
         {
-            foreach (var obstacle in this.ObstacleTree.GetAllObstacles()) 
+            foreach (var obstacle in this.ObsTree.GetAllObstacles()) 
             {
                 if (obstacle.IsOverlapped) 
                 {
@@ -613,6 +602,8 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
                     Validate.IsTrue(obstacle.IsPrimaryObstacle, "Groups should always be primary obstacles - their convex hull is never shared.");
                 }
             }
+            if (this.allObstacleHierarchy == null)
+                return;
 
             RectangleNodeUtils.CrossRectangleNodes<Obstacle,Point>(this.allObstacleHierarchy, this.allObstacleHierarchy, VerifyIntersectingObstacleBoundingBoxes);
 
@@ -728,7 +719,7 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
             hitTestOverlappingObstacle = null;
             hitTestIntervalRect = new Rectangle(start, end);
             hitTestExpectOverlap = isOverlapped;
-            ObstacleTree.Root.VisitTree(OverlappedRectangleHitTest, hitTestIntervalRect);
+            ObsTree.Root.VisitTree(OverlappedRectangleHitTest, hitTestIntervalRect);
             if (isOverlapped != (null != hitTestOverlappingObstacle))
             {
                 TestWriteLine(string.Format("  VisibilitySegment overlap mismatch: {0} -> {1}", start, end));
@@ -764,7 +755,7 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
 
             // Do the more expensive test for non-rectangular obstacle borders.  Because we have a single obstacle,
             // just do the maximum projection of the segment to the graphBox limits, then check for two intersections.
-            Rectangle graphBox = this.ObstacleTree.GraphBox;
+            Rectangle graphBox = this.ObsTree.GraphBox;
             bool isVertical = PointComparer.Equal(hitTestIntervalRect.Left, hitTestIntervalRect.Right);
             LineSegment hitTestSeg = isVertical
                                     ? new LineSegment(hitTestIntervalRect.Left, graphBox.Bottom, hitTestIntervalRect.Left, graphBox.Top)
@@ -831,8 +822,8 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
         private static void GetAscendingRawIntersections(LineSegment hitTestSeg, IList<IntersectionInfo> xxs,
                                             out Point rawInt0, out Point rawInt1, out double par0, out double par1)
         {
-            rawInt0 = SpliceUtility.RawIntersection(xxs[0], hitTestSeg.Start);
-            rawInt1 = SpliceUtility.RawIntersection(xxs[1], hitTestSeg.Start);
+            rawInt0 = ApproximateComparer.Round(xxs[0].IntersectionPoint);
+            rawInt1 = ApproximateComparer.Round(xxs[1].IntersectionPoint);
             par0 = xxs[0].Par1;
             par1 = xxs[1].Par1;
             if (rawInt0 > rawInt1)
@@ -930,7 +921,7 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
             // too; otherwise, and earlier path which crosses a non-spatial hierarchical ancestor would fail this validation
             // if a subsequent path caused SpatialAncestorsAdjusted (thereby removing that crossed non-spatial ancestor).
             // File Test: TestCode_Groups_NonSpatial_Ancestor_Crossed_Before_AdjustSpatialAncestors.
-            if (!this.ObstacleTree.SpatialAncestorsAdjusted)
+            if (!this.ObsTree.SpatialAncestorsAdjusted)
             {
                 return false;
             }
@@ -998,7 +989,7 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
 
         private void CreateGroupSpatialChildMap()
         {
-            var groupHierarchy = ObstacleTree.CalculateHierarchy(this.ObstacleTree.GetAllGroups());
+            var groupHierarchy = ObstacleTree.CalculateHierarchy(this.ObsTree.GetAllGroups());
             this.spatialChildrenToGroups = new Dictionary<Obstacle, List<Obstacle>>();
             if ((groupHierarchy == null) || (this.allObstacleHierarchy == null)) 
             {
@@ -1009,13 +1000,13 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
 
         private void CreateSuperClumpMap()
         {
-            this.superClumpMap = new SuperClumpMap(this.ObstacleTree);
+            this.superClumpMap = new SuperClumpMap(this.ObsTree);
         }
 
         private void CreateClumpMap()
         {
             this.clumpToRectNode = new Dictionary<Clump, RectangleNode<Obstacle,Point>>();
-            foreach (var clumpee in this.ObstacleTree.GetAllObstacles().Where(obs => obs.IsOverlapped))
+            foreach (var clumpee in this.ObsTree.GetAllObstacles().Where(obs => obs.IsOverlapped))
             {
                 this.clumpToRectNode[clumpee.Clump] = null;
             }
@@ -1036,7 +1027,7 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
             this.CreateGroupSpatialChildMap();
             this.CreateSuperClumpMap();
             this.CreateClumpMap();
-            if (this.ObstacleTree.SpatialAncestorsAdjusted) {
+            if (this.ObsTree.SpatialAncestorsAdjusted) {
                 this.originalAncestorSets = SplineRouter.GetAncestorSetsMap(Obstacles);
             }
 
@@ -1130,9 +1121,9 @@ namespace Microsoft.Msagl.UnitTests.Rectilinear
         private bool CheckDirectRouteAcrossGroupThroughClumpRect(EdgeGeometry edgeGeom, LineSegment routeAsTheCrowFlies, Rectangle crossedClumpRect)
         {
             return ClumpIsGroupRoadblock(routeAsTheCrowFlies, crossedClumpRect,
-                        this.ObstacleTree.Root.AllHitItems(new Rectangle(edgeGeom.SourcePort.Location), obs => obs.IsGroup))
+                        this.ObsTree.Root.AllHitItems(new Rectangle(edgeGeom.SourcePort.Location), obs => obs.IsGroup))
                    || ClumpIsGroupRoadblock(routeAsTheCrowFlies, crossedClumpRect,
-                        this.ObstacleTree.Root.AllHitItems(new Rectangle(edgeGeom.TargetPort.Location), obs => obs.IsGroup));
+                        this.ObsTree.Root.AllHitItems(new Rectangle(edgeGeom.TargetPort.Location), obs => obs.IsGroup));
         }
 
         private bool CrossedObstacleClumpContainsEndpoint(EdgeGeometry edgeGeom, Obstacle crossedObstacle)
